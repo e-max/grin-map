@@ -51,6 +51,9 @@ fn main() {
                     break;
                 }
             };
+            if storage.write().unwrap().contains_key(&peer_addr) {
+                continue;
+            }
             println!("\x1B[33;1m peer_addr\x1B[0m = {:?}", peer_addr);
             match connect(peer_addr, local_addr, &handshake) {
                 Ok(addrs) => {
