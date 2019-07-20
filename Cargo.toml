@@ -1,0 +1,15 @@
+[package]
+name = "grin-map"
+version = "0.1.0"
+authors = ["Max Lavrenov <max.lavrenov@optiopay.com>"]
+edition = "2018"
+
+[dependencies]
+grin_p2p = { path = "../grin/p2p" }
+grin_core = { path = "../grin/core"}
+grin_util = { path = "../grin/util"}
+grin_chain = { path = "../grin/chain/"}
+env_logger = "0.6.2"
+log = "0.4.7"
+chrono = "0.4.7"
+crossbeam-channel = "0.3.8"
