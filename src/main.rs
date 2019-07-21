@@ -80,10 +80,6 @@ fn main() {
         thread::sleep(Duration::from_secs(1));
     }
 
-    //for t in threads {
-    //t.join();
-    //}
-
     let mut public = 0;
     for (k, v) in &(*storage.read().unwrap()) {
         println!("\x1B[35;1m v\x1B[0m = {:?}", v);
@@ -122,7 +118,6 @@ fn worker(
             info!("Thread {} got add {}", i, peer_addr);
             match connect(peer_addr, local_addr, &handshake) {
                 Ok(addrs) => {
-                    println!("\x1B[32;1m addrs\x1B[0m = {:?}", addrs);
                     for a in &addrs {
                         queue.push(a.clone());
                     }
@@ -130,7 +125,7 @@ fn worker(
                     hm.insert(peer_addr, Some(addrs));
                 }
                 Err(e) => {
-                    println!("\x1B[31;1m e\x1B[0m = {:?}", e);
+                    debug!("Cannot connect: {}", e);
                     let mut hm = storage.write().unwrap();
                     hm.insert(peer_addr, None);
                 }
@@ -164,7 +159,6 @@ fn connect(
 
     let peer = Arc::new(peer);
 
-    println!("\x1B[31;1m peer\x1B[0m = {:?}", peer);
     peer.send_peer_request(Capabilities::PEER_LIST)
         .map_err(|e| format!("{:?}", e))?;
 
