@@ -59,8 +59,9 @@ fn main() {
         handshake = Arc::new(Handshake::new(genesis_floo().hash(), cfg.clone()));
     } else {
         set_mining_mode(ChainTypes::Mainnet);
-        //let peer_addr = PeerAddr(SocketAddr::new("109.74.202.16".parse().unwrap(), 3414)); // mainnet
-        peer_addr = PeerAddr(SocketAddr::new("127.0.0.1".parse().unwrap(), 3414)); // mainnet
+        peer_addr = PeerAddr(SocketAddr::new("109.74.202.16".parse().unwrap(), 3414)); // mainnet
+
+        //peer_addr = PeerAddr(SocketAddr::new("127.0.0.1".parse().unwrap(), 3414)); // mainnet
         handshake = Arc::new(Handshake::new(genesis_main().hash(), cfg.clone()));
     }
 
