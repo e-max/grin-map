@@ -133,20 +133,20 @@ fn worker(
     i: u64,
 ) -> thread::JoinHandle<()> {
     thread::spawn(move || {
-        info!("start thread {}", i);
+        info!("thread {}: start", i);
         loop {
-            info!("New iterations");
+            info!("thread {}: New iterations", i);
             let peer_addr = match queue.pop() {
                 Ok(addr) => addr,
                 Err(e) => {
-                    warn!("Queue is emtpy. Quit thread {}.", i);
+                    warn!("thread {}: Queue is emtpy. Quit .", i);
                     break;
                 }
             };
             if storage.write().unwrap().contains_key(&peer_addr) {
                 continue;
             }
-            info!("Thread {} got add {}", i, peer_addr);
+            info!("Thread {}: got add {}", i, peer_addr);
             match connect(peer_addr, local_addr, &handshake) {
                 Ok(addrs) => {
                     for a in &addrs {
@@ -161,9 +161,7 @@ fn worker(
                     hm.insert(peer_addr, None);
                 }
             }
-            //info!("Now sleep for 1 sec");
-            //thread::sleep(Duration::from_secs(1));
-            info!("end of loop");
+            info!("thread {}: end of loop", i);
         }
     })
 }
