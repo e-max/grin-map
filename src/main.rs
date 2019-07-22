@@ -7,37 +7,67 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::thread;
 use std::time::Duration;
 
-use grin_core::genesis::genesis_floo;
+use grin_core::genesis::{genesis_floo, genesis_main};
 use grin_core::global::{set_mining_mode, ChainTypes};
 use grin_p2p::types::{Capabilities, P2PConfig, PeerAddr};
 use grin_p2p::Peer;
 use log::*;
 use std::collections::{HashMap, VecDeque};
+use std::fs::File;
+use std::io::{Error, Write};
 
 mod adapter;
 use crate::adapter::FakeAdapter;
 use crossbeam_queue::SegQueue;
 use crossbeam_utils::sync::ShardedLock;
+use structopt::StructOpt;
 
 type Storage = HashMap<PeerAddr, Option<Vec<PeerAddr>>>;
 
+#[derive(StructOpt, Debug)]
+#[structopt(name = "basic")]
+struct Args {
+    #[structopt(short, long)]
+    floonet: bool,
+}
+
 const NTHREADS: u8 = 100;
+
+// mainnet nodes
+// 5.9.152.75 mainnet.seed.grin-tech.org / mainnet.seed.grin.lesceller.com
+// 139.162.168.18  mainnet.seed.grin.icu
+// 94.130.229.193 mainnet.seed.713.mw
+// 159.69.37.136 mainnet.seed.grin.prokapi.com
+// 109.74.202.16  grinseed.yeastplume.org
 
 fn main() {
     env_logger::init();
     info!("Hello, world!");
-    set_mining_mode(ChainTypes::Floonet);
+
+    let args = Args::from_args();
+
     let mut cfg = P2PConfig::default();
     cfg.host = "0.0.0.0".parse().unwrap();
     cfg.port = 13415;
 
-    let handshake = Arc::new(Handshake::new(genesis_floo().hash(), cfg.clone()));
+    let mut peer_addr: PeerAddr;
+    let mut handshake: Arc<Handshake>;
+
+    if args.floonet {
+        set_mining_mode(ChainTypes::Floonet);
+        peer_addr = PeerAddr(SocketAddr::new("35.157.247.209".parse().unwrap(), 13414)); // zion
+        handshake = Arc::new(Handshake::new(genesis_floo().hash(), cfg.clone()));
+    } else {
+        set_mining_mode(ChainTypes::Mainnet);
+        //let peer_addr = PeerAddr(SocketAddr::new("109.74.202.16".parse().unwrap(), 3414)); // mainnet
+        peer_addr = PeerAddr(SocketAddr::new("127.0.0.1".parse().unwrap(), 3414)); // mainnet
+        handshake = Arc::new(Handshake::new(genesis_main().hash(), cfg.clone()));
+    }
 
     let queue = Arc::new(SegQueue::new());
     let hm: HashMap<PeerAddr, Option<Vec<PeerAddr>>> = HashMap::new();
     let storage = Arc::new(ShardedLock::new(hm));
-    //let peer_addr = PeerAddr(SocketAddr::new("127.0.0.1".parse().unwrap(), 13414));
-    let peer_addr = PeerAddr(SocketAddr::new("35.157.247.209".parse().unwrap(), 13414));
+
     let local_addr = PeerAddr(SocketAddr::new(cfg.host, cfg.port));
 
     let mut count = 1;
@@ -92,6 +122,7 @@ fn main() {
         storage.read().unwrap().len(),
         public
     );
+    store(&*storage.read().unwrap()).unwrap();
 }
 
 fn worker(
@@ -163,4 +194,23 @@ fn connect(
         .map_err(|e| format!("{:?}", e))?;
 
     adapter.get_peers().map_err(|e| format!("{:?}", e))
+}
+
+fn store(hm: &Storage) -> Result<(), Error> {
+    let mut f = File::create("./result.csv")?;
+    for (k, v) in hm {
+        write!(f, "{},[", k)?;
+        if v.is_some() {
+            let peers = v
+                .as_ref()
+                .unwrap()
+                .into_iter()
+                .map(|addr| addr.as_key())
+                .collect::<Vec<String>>()
+                .join(",");
+            write!(f, "{}", peers)?;
+        }
+        write!(f, "]\n")?;
+    }
+    Ok(())
 }
